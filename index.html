@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free QR Code Generator</title>
+    <title>Scanner-Friendly QR Generator</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -20,37 +20,43 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
-            width: 300px;
+            width: 320px;
         }
         h2 { color: #333; margin-bottom: 1.5rem; }
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            box-sizing: border-box; /* Ensures padding doesn't affect width */
+            box-sizing: border-box;
+            font-size: 14px;
         }
         button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 500;
         }
         button:hover { background-color: #0056b3; }
+        
         #qrcode {
             margin-top: 20px;
             display: flex;
             justify-content: center;
+            align-items: center;
+            min-height: 200px; /* Jhatka na lage jab QR aaye */
         }
+        
         .download-btn {
             margin-top: 15px;
             background-color: #28a745;
-            display: none; /* Initially hidden */
+            display: none; /* Pehle chipa rahega */
         }
         .download-btn:hover { background-color: #218838; }
     </style>
@@ -60,15 +66,14 @@
 
     <div class="container">
         <h2>QR Code Maker</h2>
-        <input type="text" id="urlInput" placeholder="Apna Link yahan daalein (e.g. https://google.com)">
+        <input type="text" id="urlInput" placeholder="Paste Link Here (e.g. Google Maps Link)">
         <button onclick="generateQR()">Generate QR Code</button>
         
         <div id="qrcode"></div>
-        <button id="downloadBtn" class="download-btn" onclick="downloadQR()">Download Image</button>
+        <button id="downloadBtn" class="download-btn" onclick="downloadQR()">Download HD Image</button>
     </div>
 
     <script>
-        // QR Code Object ko global variable mein store karenge
         let qrCodeObj = null;
 
         function generateQR() {
@@ -76,16 +81,15 @@
             const container = document.getElementById('qrcode');
             const downloadBtn = document.getElementById('downloadBtn');
 
-            // Agar input khali hai to alert dein
             if (!url) {
-                alert("Kripya koi link enter karein!");
+                alert("Please enter a link first!");
                 return;
             }
 
-            // Purana QR code clear karein
+            // Purana QR safai
             container.innerHTML = "";
 
-            // Naya QR code banayein
+            // Naya QR banana
             qrCodeObj = new QRCode(container, {
                 text: url,
                 width: 200,
@@ -95,28 +99,50 @@
                 correctLevel : QRCode.CorrectLevel.H
             });
 
-            // Download button show karein
+            // Button dikhana
             downloadBtn.style.display = "block";
         }
 
         function downloadQR() {
-            // QR code canvas se image data nikalna
-            const qrCanvas = document.querySelector('#qrcode canvas');
-            if(qrCanvas){
-                const imgUrl = qrCanvas.toDataURL("image/png");
+            const qrContainer = document.getElementById('qrcode');
+            
+            // Hum library dwara banaya gaya Canvas element dhoondhenge
+            let originalCanvas = qrContainer.querySelector('canvas');
+            
+            // Agar canvas nahi mila (kabhi kabhi img tag banta hai), to img tag dhoondho
+            let originalImg = qrContainer.querySelector('img');
+
+            if (originalCanvas) {
+                // STEP 1: Naya Canvas banao (taaki hum white background add kar sakein)
+                const newCanvas = document.createElement('canvas');
+                const padding = 20; // Side mein safed jagah (Border)
+                
+                // Size set karo (Original + Padding)
+                newCanvas.width = originalCanvas.width + (padding * 2);
+                newCanvas.height = originalCanvas.height + (padding * 2);
+                
+                const ctx = newCanvas.getContext('2d');
+
+                // STEP 2: Poore canvas ko WHITE color se bhar do (Dark mode fix)
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+                // STEP 3: QR Code ko beech mein paste karo
+                ctx.drawImage(originalCanvas, padding, padding);
+
+                // STEP 4: Download karo (JPG format taaki transparency na rahe)
+                const imgUrl = newCanvas.toDataURL("image/jpeg", 1.0);
                 const link = document.createElement('a');
                 link.href = imgUrl;
-                link.download = 'qrcode.png';
+                link.download = 'QR_Code_Final.jpg';
                 link.click();
-            } else {
-                // Fallback agar canvas ki jagah img tag generate hua ho (browser specific)
-                const qrImg = document.querySelector('#qrcode img');
-                if(qrImg){
-                    const link = document.createElement('a');
-                    link.href = qrImg.src;
-                    link.download = 'qrcode.png';
-                    link.click();
-                }
+            } 
+            else if (originalImg) {
+                // Fallback: Agar browser ne canvas ki jagah img tag banaya ho
+                const link = document.createElement('a');
+                link.href = originalImg.src;
+                link.download = 'QR_Code.png';
+                link.click();
             }
         }
     </script>
